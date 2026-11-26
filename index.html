@@ -5,91 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>To-Do List</title>
     <link rel="stylesheet" href="style.css" />
-    <!-- defer: the script runs after the DOM exists, so app.js can grab elements directly -->
+    <!--
+      storage.js first: it defines TodoStorage, the ONLY module allowed to
+      touch localStorage. app.js then wires the UI to it with `await`s.
+      Both are deferred, so the DOM exists when they run, in this order.
+    -->
+    <script src="storage.js" defer></script>
     <script src="app.js" defer></script>
   </head>
   <body>
-    <main class="app">
-      <h1>To-Do List</h1>
-
-      <!--
-        A real <form> is what makes the Enter key (and Return on iPad) add a task
-        for free: app.js only has to handle "submit". Iteration 2 adds an optional
-        due date to the same form rather than a second step, because most tasks
-        just get typed and hit Enter.
-      -->
-      <form id="add-form" class="add-form" autocomplete="off">
-        <input
-          id="new-task"
-          class="new-task-input"
-          type="text"
-          placeholder="What needs doing?"
-          aria-label="New task"
-          maxlength="200"
-          enterkeyhint="go"
-        />
-
-        <span class="due-field">
-          <label class="due-label" for="new-due">Due</label>
-          <input
-            id="new-due"
-            class="due-input"
-            type="date"
-            aria-label="Due date (optional)"
-          />
+    <div id="app-shell" class="app-shell">
+      <aside id="lists-sidebar" class="lists-sidebar" aria-label="Lists">
+        <div class="sidebar-head">
+          <span class="sidebar-title">Lists</span>
           <button
-            id="clear-due"
-            class="icon-btn clear-due"
+            id="sidebar-toggle"
+            class="icon-btn sidebar-toggle"
             type="button"
-            aria-label="Clear due date"
-            hidden
+            aria-label="Collapse list sidebar"
           >
-            ✕
+            «
           </button>
-        </span>
-
-        <button id="add-button" class="add-button" type="submit">Add</button>
-      </form>
-
-      <!-- role/aria-live so the counts are announced when they change -->
-      <p id="count" class="count" role="status" aria-live="polite"></p>
-
-      <!-- The one flag worth shouting about: work that slipped -->
-      <p id="overdue-line" class="overdue-line" role="status" aria-live="polite" hidden></p>
-
-      <!--
-        aria-pressed is set by app.js. These are toggles over the SAME list, not
-        links to different views, so a pressed button is the right control.
-      -->
-      <div class="toolbar">
-        <div id="filters" class="filters" role="group" aria-label="Filter tasks">
-          <button type="button" class="filter" data-filter="all">All</button>
-          <button type="button" class="filter" data-filter="active">Active</button>
-          <button type="button" class="filter" data-filter="completed">Completed</button>
         </div>
 
-        <button id="clear-completed" class="clear-completed" type="button" disabled>
-          Clear completed
-        </button>
-      </div>
+        <ul id="list-items" class="list-items"></ul>
 
-      <!-- Only shown if this browser refuses to give us localStorage -->
-      <p id="storage-warning" class="storage-warning" role="alert" hidden>
-        This browser won’t save tasks, so they’ll disappear when you reload.
-      </p>
+        <form id="new-list-form" class="new-list-form" autocomplete="off">
+          <input
+            id="new-list-name"
+            class="new-list-input"
+            type="text"
+            placeholder="New list"
+            aria-label="New list name"
+            maxlength="40"
+          />
+          <button class="add-button" type="submit">Add</button>
+        </form>
+      </aside>
 
-      <ul id="task-list" class="task-list"></ul>
+      <main class="app">
+        <h1>To-Do List</h1>
 
-      <p id="empty-state" class="empty-state" hidden>
-        Nothing to do yet. Add your first task above.
-      </p>
+        <!--
+          A real <form> is what makes the Enter key (and Return on iPad) add
+          a task for free: app.js only has to handle "submit". Iteration 3
+          adds an optional due date to the same form, as iteration 2 did.
+        -->
+        <form id="add-form" class="add-form" autocomplete="off">
+          <input
+            id="new-task"
+            class="new-task-input"
+            type="text"
+            placeholder="What needs doing?"
+            aria-label="New task"
+            maxlength="200"
+            enterkeyhint="go"
+          />
 
-      <!--
-        Rows are rebuilt on every change, so a delete silently removes the element
-        that had focus. Screen readers need this stable channel to hear what
-        happened instead of just losing their place.
-      -->
-      <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
-    </main>
+          <span class="due-field">
+            <label class="due-label" for="new-due">Due</label>
+            <input
+              id="new-due"
+              class="due-input"
+              type="date"
+              aria-label="Due date (optional)"
+            />
+            <button
+              id="clear-due"
+              class="icon-btn clear-due"
+              type="button"
+              aria-label="Clear due date"
+              hidden
+            >
+              ✕
+            </button>
+          </span>
+
+          <button id="add-button" class="add-button" type="submit">Add</button>
+        </form>
+
+        <!-- role/aria-live so the counts are announced when they change -->
+        <p id="count" class="count" role="status" aria-live="polite"></p>
+
+        <!-- The one flag worth shouting about: work that slipped -->
+        <p id="overdue-line" class="overdue-line" role="status" aria-live="polite" hidden></p>
+
+        <!--
+          aria-pressed is set by app.js. These are toggles over the SAME
+          list, not links to different views, so a pressed button is the
+          right control.
+        -->
+        <div class="toolbar">
+          <div id="filters" class="filters" role="group" aria-label="Filter tasks">
+            <button type="button" class="filter" data-filter="all">All</button>
+            <button type="button" class="filter" data-filter="active">Active</button>
+            <button type="button" class="filter" data-filter="completed">Completed</button>
+          </div>
+
+          <button id="clear-completed" class="clear-completed" type="button" disabled>
+            Clear completed
+          </button>
+        </div>
+
+        <!-- Only shown if this browser refuses to give us localStorage -->
+        <p id="storage-warning" class="storage-warning" role="alert" hidden>
+          This browser won’t save tasks, so they’ll disappear when you reload.
+        </p>
+
+        <ul id="task-list" class="task-list"></ul>
+
+        <p id="empty-state" class="empty-state" hidden>
+          Nothing to do yet. Add your first task above.
+        </p>
+
+        <!--
+          Task details: notes (multi-line), due date, and which list the
+          task lives in. app.js fills this section when a row's "i" button
+          is pressed; it is hidden otherwise.
+        -->
+        <section
+          id="detail-panel"
+          class="detail-panel"
+          aria-label="Task details"
+          hidden
+        ></section>
+
+        <!--
+          Rows are rebuilt on every change, so a delete silently removes the
+          element that had focus. Screen readers need this stable channel
+          to hear what happened instead of just losing their place.
+        -->
+        <p id="announce" class="visually-hidden" role="status" aria-live="polite"></p>
+      </main>
+    </div>
   </body>
 </html>

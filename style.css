@@ -631,3 +631,377 @@ h1 {
   }
 }
 
+
+/* =============================================================
+ * iteration 3 — sidebar, subtasks, prompt card, details panel
+ * ============================================================= */
+
+/* ---------- App shell: sidebar + main column ---------- */
+.app-shell {
+  display: flex;
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 18px calc(40px + env(safe-area-inset-bottom));
+  align-items: flex-start;
+}
+
+.app-shell .app {
+  max-width: 700px;
+  margin: 0;
+  padding: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The sidebar is the collapsed rail by default on phones; at 900px+ (iPad /
+   desktop) it sits expanded next to the list. The toggle button flips the
+   .sidebar-collapsed class, which is what really does the work. */
+.lists-sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  max-height: calc(100vh - 60px);
+  overflow-y: auto;
+  position: sticky;
+  top: 16px;
+}
+
+.sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sidebar-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--ink);
+}
+
+.sidebar-toggle {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  color: var(--ink-muted);
+}
+
+.app-shell.sidebar-collapsed .lists-sidebar {
+  flex: 0 0 56px;
+  width: 56px;
+  overflow: hidden;
+}
+
+.app-shell.sidebar-collapsed .sidebar-head .sidebar-title,
+.app-shell.sidebar-collapsed .list-name,
+.app-shell.sidebar-collapsed .list-count,
+.app-shell.sidebar-collapsed .list-actions,
+.app-shell.sidebar-collapsed .new-list-form {
+  display: none;
+}
+
+.app-shell.sidebar-collapsed .list-item {
+  justify-content: center;
+}
+
+/* Default state: wide screens open, phones closed (set by render()). */
+@media (min-width: 900px) {
+  .app-shell:not(.sidebar-collapsed) .lists-sidebar {
+    flex: 0 0 260px;
+    width: 260px;
+  }
+}
+
+@media (max-width: 899px) {
+  .app-shell { flex-direction: column; }
+  .lists-sidebar { width: 100%; flex-basis: auto; position: static; max-height: none; }
+  .app { order: -1; } /* list first on phones; the rail folds below */
+}
+
+/* ---------- list rows in the sidebar ---------- */
+.list-items {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.list-item {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--tap);
+  padding: 6px 8px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.list-item:hover {
+  background: var(--done-bg);
+}
+
+.list-item.is-current {
+  background: #eaf1fd;
+  border-color: var(--accent);
+}
+
+.list-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+
+.list-name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.list-count {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--chip);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.list-item.is-renaming {
+  display: block;
+  background: var(--done-bg);
+}
+
+.list-rename-input {
+  width: 100%;
+  min-height: var(--tap);
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.list-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.list-color {
+  width: 40px;
+  height: 40px;
+  padding: 2px;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  cursor: pointer;
+}
+
+/* Deleting a list asks first: an in-page card, never a browser dialog. */
+.list-confirm {
+  margin: 4px 0 4px 8px;
+  padding: 10px;
+  background: var(--danger-bg);
+  border: 2px solid var(--danger);
+  border-radius: 10px;
+}
+
+.confirm-question {
+  margin: 0 0 8px;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.btn.danger {
+  color: #ffffff;
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn.danger:hover {
+  background: #7a0c15;
+}
+
+/* ---------- new list form ---------- */
+.new-list-form {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.new-list-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.new-list-form .add-button {
+  padding: 8px 14px;
+  min-height: var(--tap);
+}
+
+/* ---------- Subtask indentation ---------- */
+/* Depth drives the left indent; capping at 8 levels keeps 360px sane. */
+.task[data-depth="1"] { margin-left: 22px; }
+.task[data-depth="2"] { margin-left: 44px; }
+.task[data-depth="3"] { margin-left: 66px; }
+.task[data-depth="4"] { margin-left: 88px; }
+.task[data-depth="5"] { margin-left: 110px; }
+.task[data-depth="6"] { margin-left: 132px; }
+.task[data-depth="7"] { margin-left: 154px; }
+.task[data-depth="8"] { margin-left: 176px; }
+
+.task-collapse {
+  min-width: var(--tap);
+  min-height: var(--tap);
+  font-size: 1rem;
+}
+
+/* ---------- inline subtask box ---------- */
+.subtask-box {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+  margin: 4px 0 4px 24px;
+  padding: 8px;
+  background: var(--done-bg);
+  border-radius: 10px;
+}
+
+.subtask-input {
+  min-height: var(--tap);
+  padding: 8px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+/* ---------- complete-subtasks prompt card ---------- */
+.complete-prompt {
+  background: var(--card);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+.prompt-question {
+  margin: 0;
+  font-weight: 600;
+}
+
+.complete-prompt .btn {
+  justify-self: start;
+}
+
+/* ---------- details panel ---------- */
+.detail-panel {
+  margin-top: 14px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.detail-title {
+  margin: 0;
+  font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detail-field {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.detail-field .due-label {
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.detail-notes {
+  min-height: 88px;
+  padding: 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  resize: vertical;
+}
+
+.detail-due {
+  min-height: var(--tap);
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.detail-list {
+  min-height: var(--tap);
+  padding: 6px 10px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.detail-close {
+  align-self: start;
+}
+
+.detail-panel .btn.primary {
+  justify-self: end;
+}
+
+/* ---------- narrow phones: indent cap + row actions wrap ---------- */
+@media (max-width: 430px) {
+  .task[data-depth="3"],
+  .task[data-depth="4"],
+  .task[data-depth="5"],
+  .task[data-depth="6"],
+  .task[data-depth="7"],
+  .task[data-depth="8"] {
+    margin-left: 66px;
+  }
+
+  .task {
+    grid-template-columns: auto auto minmax(0, 1fr);
+  }
+
+  .row-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+    flex-wrap: wrap;
+  }
+}
