@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>To-Do List</title>
+    <link rel="stylesheet" href="style.css" />
+    <!-- defer: the script runs after the DOM exists, so app.js can grab elements directly -->
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <main class="app">
+      <h1>To-Do List</h1>
+
+      <!--
+        A real <form> is what makes the Enter key (and Return on iPad)
+        add a task for free: app.js just handles "submit".
+      -->
+      <form id="add-form" class="add-form" autocomplete="off">
+        <input
+          id="new-task"
+          class="new-task-input"
+          type="text"
+          placeholder="What needs doing?"
+          aria-label="New task"
+          maxlength="200"
+          enterkeyhint="go"
+        />
+        <button id="add-button" class="add-button" type="submit">Add</button>
+      </form>
+
+      <!-- role/aria-live so the count is announced when it changes -->
+      <p id="count" class="count" role="status" aria-live="polite"></p>
+
+      <!-- Only shown if this browser refuses to give us localStorage -->
+      <p id="storage-warning" class="storage-warning" role="alert" hidden>
+        This browser won’t save tasks, so they’ll disappear when you reload.
+      </p>
+
+      <ul id="task-list" class="task-list"></ul>
+
+      <p id="empty-state" class="empty-state" hidden>
+        Nothing to do yet. Add your first task above.
+      </p>
+    </main>
+  </body>
+</html>
