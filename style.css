@@ -1,6 +1,8 @@
 /* =============================================================
- * To-Do List — iteration 1
+ * To-Do List — iteration 2
  * Mobile-first: sized for iPad Safari first, desktop second.
+ * Iteration 1's tokens and sizing rules are untouched; everything new
+ * (due dates, filters, editing, drag) is additive below.
  * ============================================================= */
 
 /* ---------- Design tokens ---------- */
@@ -18,6 +20,15 @@
   --done-bg: #f2f5f7;
   --radius: 12px;
   --tap: 44px; /* smallest comfortable touch target */
+
+  /* iteration 2 */
+  --overdue: #8a1020; /* overdue text, 7.1:1 on white */
+  --overdue-bg: #fdecec;
+  --overdue-line: #a3111f;
+  --due: #3d4854; /* due-but-not-overdue text */
+  --chip: #eef2f6; /* due badge fill */
+  --grip: #96a1ad; /* drag handle dots */
+  --focus: #0b57d0;
 }
 
 *,
@@ -44,9 +55,10 @@ body {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Roomy single column, centred on desktop. */
+/* Roomy single column, centred on desktop. A touch wider than iteration 1 now
+   that a row carries a due date and two buttons. */
 .app {
-  max-width: 640px;
+  max-width: 700px;
   margin: 0 auto;
   padding: 24px 18px calc(40px + env(safe-area-inset-bottom));
 }
@@ -61,12 +73,13 @@ h1 {
 /* ---------- Add-a-task row ---------- */
 .add-form {
   display: flex;
+  flex-wrap: wrap; /* the due field drops below on a phone instead of squeezing the text box */
   gap: 10px;
   margin: 20px 0 12px;
 }
 
 .new-task-input {
-  flex: 1 1 auto;
+  flex: 1 1 220px;
   min-width: 0; /* lets the row shrink instead of overflowing on iPad */
   min-height: var(--tap);
   padding: 10px 14px;
@@ -81,6 +94,36 @@ h1 {
 
 .new-task-input::placeholder {
   color: var(--ink-muted);
+}
+
+/* Optional due date, visually subordinate to the task text: most tasks are
+   added without one, and an equally-loud field would be nagging. */
+.due-field {
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 12px 4px 14px;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.due-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.due-input {
+  min-height: 36px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
 .add-button,
@@ -104,11 +147,23 @@ h1 {
   background: #0947ab;
 }
 
-/* ---------- Count + storage warning ---------- */
+/* ---------- Count, overdue flag, storage warning ---------- */
 .count {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   font-weight: 600;
   color: var(--ink-muted);
+}
+
+/* Overdue is the one thing in this app that should feel urgent, so it gets its
+   own line rather than a colour that colourblind users may not decode. */
+.overdue-line {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  color: var(--overdue);
+  background: var(--overdue-bg);
+  border-left: 5px solid var(--overdue-line);
+  border-radius: 6px;
 }
 
 .storage-warning {
@@ -120,6 +175,110 @@ h1 {
   border-radius: var(--radius);
 }
 
+/* ---------- Toolbar: filters + clear completed ---------- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap; /* on a phone the two groups stack instead of squeezing */
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+  margin: 0 0 18px;
+}
+
+/* These are toggles over one list, not tabs — but they read as a segmented
+   control, so they get one container and the pressed state is reinforced with
+   fill as well as aria-pressed (colour alone is not enough). */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.filter {
+  font: inherit;
+  font-weight: 600;
+  min-height: var(--tap);
+  padding: 0 16px;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: calc(var(--radius) - 4px);
+  cursor: pointer;
+}
+
+.filter:hover {
+  color: var(--ink);
+  background: var(--card);
+}
+
+.filter.is-active {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Destructive but routine, so it sits at the far end, stays out the accent
+   colour, and is disabled rather than hidden when there is nothing to clear —
+   a button that vanishes makes the toolbar jump. */
+.clear-completed {
+  font: inherit;
+  font-weight: 600;
+  min-height: var(--tap);
+  padding: 8px 16px;
+  color: var(--danger);
+  background: transparent;
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.clear-completed:hover:not(:disabled) {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+}
+
+.clear-completed:disabled {
+  color: var(--ink-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- Icon buttons (edit / delete / clear-due) ---------- */
+.icon-btn {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  padding: 6px 10px;
+  line-height: 1;
+  color: var(--ink-muted);
+  background: transparent;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.icon-btn:hover {
+  color: var(--ink);
+  background: var(--done-bg);
+  border-color: var(--ink-muted);
+}
+
+/* The one exception: this sits INSIDE the due field, whose own 44px height
+   comes from the field, not the button. */
+.icon-btn.clear-due {
+  min-width: 30px;
+  min-height: 30px;
+  padding: 2px 8px;
+  font-size: 1rem;
+}
+
 /* ---------- Task list ---------- */
 .task-list {
   list-style: none;
@@ -127,20 +286,50 @@ h1 {
   padding: 0;
   display: grid;
   gap: 10px;
+  /* The drop guide is absolutely positioned against this box, so the guide can
+     sit in the gaps between rows without shifting any row. */
+  position: relative;
 }
 
+/* [grip] [checkbox] [text + due date] [edit ✕]
+   Iteration 1 had three columns; the grip and the .task-main wrapper are new.
+   Wrapping text + date into ONE flexible column is deliberate: five siblings in
+   one grid row is what pushed Delete off-screen at 360px, and it also lets the
+   due date drop under the text instead of squeezing it. */
 .task {
-  /* [checkbox] [text — takes the slack] [Delete] */
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   min-height: 60px;
-  padding: 10px 14px;
+  padding: 10px 12px;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  transition: background-color 120ms ease;
+  transition: background-color 120ms ease, box-shadow 120ms ease,
+    opacity 120ms ease;
+}
+
+/* Only drag handle that matters is this one. touch-action:none is what makes a
+   drag work on iPad at all: without it the browser keeps the gesture for
+   scrolling and pointermove never fires. A whole-row handle would instead make
+   the list impossible to scroll with a thumb. */
+.grip {
+  padding: 6px 2px;
+  min-width: 26px;
+  font-size: 1rem;
+  line-height: 1;
+  letter-spacing: -3px;
+  text-align: center;
+  color: var(--grip);
+  cursor: grab;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.grip:hover {
+  color: var(--ink-muted);
 }
 
 .task-check {
@@ -151,18 +340,82 @@ h1 {
   cursor: pointer;
 }
 
-/* The text is a <label for="...">, so tapping the words also ticks the
-   box — a much bigger target than the 28px checkbox alone on touch. */
+.task-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  min-width: 0;
+}
+
+/* The text is still a <label for="...">, so tapping the words also ticks the
+   box — that, not a bigger checkbox, is what makes this comfortable on touch. */
 .task-text {
   overflow-wrap: anywhere; /* long words/URLs wrap instead of pushing Delete off */
   cursor: pointer;
 }
 
-.task-delete {
-  padding: 8px 16px;
-  color: var(--danger);
+/* ---------- Due date ---------- */
+.due {
+  padding: 2px 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.6;
+  white-space: nowrap;
+  background: var(--chip);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+
+/* No date, no badge — but the element stays in the DOM so the row layout never
+   depends on whether a task happens to have a due date. */
+.due[data-due-state="none"] {
+  display: none;
+}
+
+.due[data-due-state="open"] {
+  color: var(--due);
+}
+
+/* Overdue gets more than colour: a word ("Overdue …") in the text itself, a
+   heavier weight, and a border, so it survives greyscale and colourblindness. */
+.due[data-due-state="overdue"] {
+  color: var(--overdue);
+  background: var(--overdue-bg);
+  border-color: var(--overdue-line);
+  font-weight: 700;
+}
+
+/* A finished task is no longer late, whatever its date says. */
+.due[data-due-state="done"] {
+  color: var(--done);
   background: transparent;
-  border: 2px solid var(--line);
+  font-weight: 500;
+  text-decoration: line-through;
+}
+
+/* Progressive enhancement only — the badge above already carries the whole
+   signal, so an engine without :has simply loses the row tint. */
+.task:has(.due[data-due-state="overdue"]) {
+  background: var(--overdue-bg);
+  border-left: 5px solid var(--overdue-line);
+}
+
+/* ---------- Row actions ---------- */
+.row-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.task-edit:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: #eaf1fd;
+}
+
+.task-delete {
+  color: var(--danger);
+  border-color: var(--line);
 }
 
 .task-delete:hover {
@@ -176,13 +429,128 @@ h1 {
   background: var(--done-bg);
 }
 
+/* Iteration 1's rule, unchanged: completed text is struck through. Keeping the
+   class name and the decoration is why the iteration-1 checks still pass. */
 .task.done .task-text {
   color: var(--done);
   text-decoration: line-through;
   text-decoration-thickness: 2px;
 }
 
-/* ---------- Empty state ---------- */
+/* ---------- Editing in place ---------- */
+/* Same row, different contents — the row never leaves the list, so the list
+   does not jump while you edit. */
+.task.is-editing {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  row-gap: 10px;
+  background: var(--card);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px #0b57d026;
+}
+
+.edit-text {
+  grid-column: 1 / -1;
+  min-width: 0;
+  min-height: var(--tap);
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.edit-due {
+  min-height: var(--tap);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 10px;
+}
+
+.btn {
+  font: inherit;
+  font-weight: 600;
+  min-height: var(--tap);
+  padding: 8px 18px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn.primary {
+  color: var(--on-accent);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn.ghost {
+  color: var(--ink-muted);
+  background: transparent;
+  border-color: var(--line);
+}
+
+/* Written out rather than left to folklore: on a touch device there is no Esc
+   key in sight, so the Cancel button is the real exit — the hint just explains
+   what Enter does for keyboard users. */
+.edit-hint {
+  grid-column: 1 / -1;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+/* ---------- Drag to reorder ---------- */
+/* The row being dragged stays exactly where it is (no clones, no re-render) and
+   just fades; the guide line shows where it will land. */
+.task.is-dragging {
+  opacity: 0.4;
+  background: var(--chip);
+  border-style: dashed;
+}
+
+.task-list.is-reordering {
+  cursor: grabbing;
+}
+
+.task-list.is-reordering .task:not(.is-dragging) {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drop-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* End caps make the guide readable as "insert here" rather than a stray rule. */
+.drop-line::before,
+.drop-line::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.drop-line::before {
+  left: -2px;
+}
+
+.drop-line::after {
+  right: -2px;
+}
+
+/* ---------- Empty / filtered-out state ---------- */
 .empty-state {
   margin: 0;
   padding: 28px 20px;
@@ -192,10 +560,31 @@ h1 {
   border-radius: var(--radius);
 }
 
-/* ---------- Focus, motion, larger screens ---------- */
+/* Announced, never seen: this is the channel that tells a screen reader what a
+   rebuild did when the element it had focus on no longer exists. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Focus ---------- */
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* A drag handle has no visible box of its own, so it needs its own ring. */
+.grip:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 0;
+  border-radius: 6px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -204,12 +593,41 @@ h1 {
   }
 }
 
+/* ---------- Narrow phones ---------- */
+@media (max-width: 430px) {
+  .app {
+    padding: 16px 12px calc(32px + env(safe-area-inset-bottom));
+  }
+
+  /* Actions move to their own line rather than squeezing the text: three
+     columns of controls at 360px is how iteration 1 lost Delete off-screen. */
+  .task {
+    grid-template-columns: auto auto minmax(0, 1fr);
+    row-gap: 8px;
+  }
+
+  .row-actions {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+
+  .task.is-editing {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .toolbar {
+    justify-content: flex-start;
+  }
+}
+
+/* ---------- Large screens ---------- */
 @media (min-width: 900px) {
   body {
-    font-size: 1.25rem; /* 20px on a big screen */
+    font-size: 1.25rem; /* 20px on a big screen; keeps inputs above iOS's zoom threshold everywhere else */
   }
 
   h1 {
     font-size: 2rem;
   }
 }
+
